@@ -1,0 +1,166 @@
+<title>Double KPI 予実</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+JP:wght@400;500;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: summary strip → category gauges + monthly funnel → filterable roster. Ink-on-paper palette, ink-blue accent, signal colors reserved for attainment. */
+:root{
+  --bg:#f6f5f1;--surface:#ffffff;--fg:#1c1d22;--muted:#6b6e78;--line:#dcdbd4;
+  --accent:#1f4e9b;--accent-soft:#e3ebf7;
+  --good:#1f7a4d;--good-soft:#dff1e6;--warn:#b86a00;--warn-soft:#fbead1;--bad:#b3261e;--bad-soft:#f8dfdd;
+  --track:#e9e8e2;
+  --display:"IBM Plex Sans JP",system-ui,sans-serif;--mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#15161a;--surface:#1f2026;--fg:#ecebe6;--muted:#9a9ca6;--line:#33353d;--accent:#7fa7e6;--accent-soft:#23324c;--good:#5fbf8a;--good-soft:#1e3a2b;--warn:#e3a24a;--warn-soft:#3d2d14;--bad:#ea7b74;--bad-soft:#44211f;--track:#2a2b32;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#15161a;--surface:#1f2026;--fg:#ecebe6;--muted:#9a9ca6;--line:#33353d;--accent:#7fa7e6;--accent-soft:#23324c;--good:#5fbf8a;--good-soft:#1e3a2b;--warn:#e3a24a;--warn-soft:#3d2d14;--bad:#ea7b74;--bad-soft:#44211f;--track:#2a2b32;color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--display);font-size:14px;line-height:1.5;margin:0}
+.wrap{max-width:1180px;margin:0 auto;padding-inline:20px;padding-block:28px 56px;display:grid;gap:28px}
+header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px;border-bottom:2px solid var(--fg);padding-bottom:14px}
+h1{margin:0;font-size:24px;font-weight:700;letter-spacing:-.01em}
+h1 small{display:block;font-size:12px;font-weight:500;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px}
+.meta{font-size:12px;color:var(--muted);font-family:var(--mono)}
+.meta a{color:var(--accent)}
+h2{font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:0 0 12px;font-weight:600}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px}
+.tile{background:var(--surface);border:1px solid var(--line);padding:16px 18px;min-width:0}
+.tile .l{font-size:12px;color:var(--muted)}
+.tile .v{font-family:var(--mono);font-size:30px;font-weight:500;font-variant-numeric:tabular-nums;line-height:1.1;margin-top:6px}
+.tile .v span{font-size:14px;color:var(--muted);margin-left:4px;font-family:var(--display)}
+.tile .s{font-size:12px;margin-top:8px;color:var(--muted)}
+.bar{height:6px;background:var(--track);margin-top:10px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent)}
+.grid2{display:grid;grid-template-columns:1.1fr 1fr;gap:28px}
+@media(max-width:820px){.grid2{grid-template-columns:1fr}}
+.panel{background:var(--surface);border:1px solid var(--line);padding:18px 20px;min-width:0}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+th{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);font-weight:600;white-space:nowrap}
+td{padding:9px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
+td.num,th.num{text-align:right;font-family:var(--mono);font-size:13px}
+.cat td:first-child{font-weight:500}
+.gauge{display:flex;align-items:center;gap:10px;min-width:160px}
+.gauge .t{flex:1;height:10px;background:var(--track);position:relative}
+.gauge .t i{position:absolute;inset:0 auto 0 0;background:var(--accent)}
+.gauge .t b{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--fg);opacity:.5}
+.pill{display:inline-block;padding:2px 8px;font-size:11px;font-weight:600;border-radius:999px;white-space:nowrap}
+.p-good{background:var(--good-soft);color:var(--good)}.p-warn{background:var(--warn-soft);color:var(--warn)}.p-bad{background:var(--bad-soft);color:var(--bad)}.p-acc{background:var(--accent-soft);color:var(--accent)}.p-mut{background:var(--track);color:var(--muted)}
+.scroll{overflow-x:auto}
+svg text{fill:var(--fg);font-family:var(--mono);font-size:11px}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:8px}
+.legend i{display:inline-block;width:10px;height:10px;margin-right:5px;vertical-align:middle}
+.funnel{display:grid;gap:6px;margin-top:4px}
+.funnel div{display:grid;grid-template-columns:150px 1fr 56px;align-items:center;gap:10px;font-size:13px}
+.funnel .fb{height:16px;background:var(--track)}.funnel .fb i{display:block;height:100%;background:var(--accent)}
+.funnel .n{font-family:var(--mono);text-align:right}
+.toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:12px}
+.toolbar input,.toolbar select{font:inherit;padding:7px 10px;border:1px solid var(--line);background:var(--bg);color:var(--fg);min-width:0}
+.toolbar input{flex:1 1 200px}
+.count{font-size:12px;color:var(--muted);margin-left:auto;font-family:var(--mono)}
+.roster td a{color:var(--accent);text-decoration:none}
+.roster td a:hover{text-decoration:underline}
+.roster td.name{max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.note{font-size:12px;color:var(--muted);margin-top:10px}
+.analogy{border-left:3px solid var(--accent);padding:10px 14px;background:var(--accent-soft);font-size:13px}
+button.more{font:inherit;padding:8px 14px;border:1px solid var(--line);background:var(--surface);color:var(--fg);cursor:pointer;margin-top:10px}
+button.more:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+th button{all:unset;cursor:pointer}
+@media(prefers-reduced-motion:no-preference){.bar i,.gauge .t i{transition:width .5s ease}}
+</style>
+<div class="wrap">
+<header>
+  <h1><small>Horipro Digital Entertainment</small>Double 所属クリエイター KPI 予実</h1>
+  <div class="meta">データ: <a href="https://docs.google.com/spreadsheets/d/1yOjmaqtQYC0Qki5b6sh16CrbCjhDBBLfRY_E-MBR0IM/edit" target="_blank" rel="noopener">【Double】リストアップシート</a> ／ Notion 目標・Action Plan ・ 取得 <span id="upd"></span></div>
+</header>
+
+<section>
+  <h2>結論 — 契約500名に対する到達度</h2>
+  <div class="tiles" id="tiles"></div>
+</section>
+
+<div class="grid2">
+  <section class="panel">
+    <h2>注力カテゴリ別 予実（2026年度）</h2>
+    <div class="scroll"><table class="cat"><thead><tr><th>カテゴリ</th><th class="num">目標</th><th class="num">契約</th><th>進捗</th><th class="num">達成率</th><th class="num">残り</th></tr></thead><tbody id="catbody"></tbody></table></div>
+    <p class="note">目標は年間（Notion「目標・Action Plan」）、契約数はスプレッドシート「2026年度進捗管理」の値。</p>
+  </section>
+  <section class="panel">
+    <h2>月次 声掛け → 契約（5〜9月）</h2>
+    <div class="scroll"><svg id="monthly" viewBox="0 0 520 230" width="100%" role="img" aria-label="月次の声掛け目標・実数と契約数"></svg></div>
+    <div class="legend"><span><i style="background:var(--track)"></i>声掛け目標</span><span><i style="background:var(--accent)"></i>声掛け実数</span><span><i style="background:var(--good)"></i>契約数（線）</span></div>
+    <div class="scroll" style="margin-top:12px"><table><thead><tr><th>月</th><th class="num">契約目標</th><th class="num">契約</th><th class="num">声掛け目標</th><th class="num">声掛け実数</th><th class="num">契約率</th></tr></thead><tbody id="mbody"></tbody></table></div>
+  </section>
+</div>
+
+<div class="grid2">
+  <section class="panel">
+    <h2>リスト全体のステータス（1,013件）</h2>
+    <div class="funnel" id="funnel"></div>
+    <p class="note">声掛け済みのうち契約に至った割合がカテゴリ充足の制約。例えるなら、採用の歩留まり表です：母集団（アタック済）が多くても、面談→内定（契約）の転換率が低ければ目標には届きません。</p>
+  </section>
+  <section class="panel">
+    <h2>契約者のジャンル内訳（契約完了 141名）</h2>
+    <div class="scroll"><svg id="genre" viewBox="0 0 520 220" width="100%" role="img" aria-label="契約完了者のジャンル内訳"></svg></div>
+    <p class="note">シート上のジャンル（美容／日用品／食品 など）。注力カテゴリ「ママ・ライフスタイル」は日用品・食品・ライフスタイルを含む集計。</p>
+  </section>
+</div>
+
+<section class="panel roster">
+  <h2>所属リスト（契約完了 + 契約手続き中）</h2>
+  <div class="toolbar">
+    <input id="q" type="search" placeholder="アカウント名 / ジャンル / 担当で検索">
+    <select id="fst"><option value="">全ステータス</option></select>
+    <select id="fg"><option value="">全ジャンル</option></select>
+    <select id="ffy"><option value="">全年度</option><option value="2026">2026年度契約</option><option value="2025">2025年度契約</option></select>
+    <span class="count" id="cnt"></span>
+  </div>
+  <div class="scroll"><table><thead><tr>
+    <th>アカウント名</th><th>SNS</th><th>ジャンル</th><th class="num"><button data-k="f">フォロワー ↕</button></th><th>ステータス</th><th>契約月</th><th>担当</th><th>Impulz</th>
+  </tr></thead><tbody id="rbody"></tbody></table></div>
+  <button class="more" id="more" hidden>さらに表示</button>
+  <p class="note">映像レーベル契約（5名：さはね、岡崎未祐、酒井理菜、福田夏海(ナゾノコ)、木村彩音）は別シート管理のため上記に含みません。連絡先・住所などの備考欄は掲載していません。</p>
+</section>
+</div>
+<script src="data.js"></script>
+<script>
+const $=s=>document.querySelector(s);
+const D=DATA, pct=(a,t)=>t?Math.round(a/t*1000)/10:0;
+$('#upd').textContent=D.updated;
+const cls=p=>p>=70?'p-good':p>=30?'p-warn':'p-bad';
+// tiles
+const sumA=D.cats.reduce((s,c)=>s+c.a,0);
+const attackTotal=D.monthly.reduce((s,m)=>s+m.aa,0), contractTotal=D.monthly.reduce((s,m)=>s+m.c,0);
+const tiles=[
+ {l:'契約目標（年間）',v:D.target,u:'名',s:'注力4カテゴリ合計 500'},
+ {l:'契約人数 総計（累計）',v:D.total,u:'名',s:`達成率 ${pct(D.total,D.target)}%`,bar:pct(D.total,D.target)},
+ {l:'2026年度 契約人数',v:D.fy2026,u:'名',s:`カテゴリ内訳合計 ${sumA}名`,bar:pct(D.fy2026,D.target)},
+ {l:'声掛け → 契約 転換率',v:pct(contractTotal,attackTotal),u:'%',s:`声掛け ${attackTotal.toLocaleString()} / 契約 ${contractTotal}（5〜9月）`},
+];
+$('#tiles').innerHTML=tiles.map(t=>`<div class="tile"><div class="l">${t.l}</div><div class="v">${t.v.toLocaleString()}<span>${t.u}</span></div><div class="s">${t.s}</div>${t.bar!=null?`<div class="bar"><i style="width:${t.bar}%"></i></div>`:''}</div>`).join('');
+// categories
+$('#catbody').innerHTML=D.cats.map(c=>{const p=pct(c.a,c.t);return `<tr><td>${c.n}</td><td class="num">${c.t||'—'}</td><td class="num">${c.a}</td><td><div class="gauge"><div class="t"><i style="width:${Math.min(p,100)}%"></i>${c.t?'<b style="left:100%"></b>':''}</div></div></td><td class="num">${c.t?`<span class="pill ${cls(p)}">${p}%</span>`:'<span class="pill p-mut">対象外</span>'}</td><td class="num">${c.t?c.t-c.a:'—'}</td></tr>`}).join('');
+// monthly chart
+(function(){const W=520,H=230,L=44,R=16,T=16,B=36,w=W-L-R,h=H-T-B;const max=400;const n=D.monthly.length,g=w/n;
+let s='';for(const v of [0,100,200,300,400]){const y=T+h-v/max*h;s+=`<line x1="${L}" x2="${W-R}" y1="${y}" y2="${y}" stroke="var(--line)"/><text x="${L-6}" y="${y+4}" text-anchor="end">${v}</text>`}
+D.monthly.forEach((m,i)=>{const x=L+i*g;const bw=g*0.26;s+=`<rect x="${x+g*0.2}" y="${T+h-m.ta/max*h}" width="${bw}" height="${m.ta/max*h}" fill="var(--track)"/><rect x="${x+g*0.2+bw+3}" y="${T+h-m.aa/max*h}" width="${bw}" height="${m.aa/max*h}" fill="var(--accent)"/><text x="${x+g/2}" y="${H-14}" text-anchor="middle">${m.m}</text>`});
+const pts=D.monthly.map((m,i)=>[L+i*g+g/2,T+h-m.c/max*h]);s+=`<polyline points="${pts.map(p=>p.join(',')).join(' ')}" fill="none" stroke="var(--good)" stroke-width="2.5"/>`;pts.forEach((p,i)=>{s+=`<circle cx="${p[0]}" cy="${p[1]}" r="4" fill="var(--good)"/><text x="${p[0]}" y="${p[1]-9}" text-anchor="middle" style="fill:var(--good);font-weight:600">${D.monthly[i].c}</text>`});
+$('#monthly').innerHTML=s;})();
+$('#mbody').innerHTML=D.monthly.map(m=>`<tr><td>${m.m}</td><td class="num">${m.tc}</td><td class="num">${m.c}</td><td class="num">${m.ta}</td><td class="num">${m.aa}</td><td class="num">${pct(m.c,m.aa)}%</td></tr>`).join('');
+// funnel
+const order=['アタック済','契約完了','案件実施確定後 契約締結','契約交渉中','契約書内容確認中','契約書送付済','保留','事務所所属','お断り','アタックしない'];
+const mx=Math.max(...Object.values(D.status));
+$('#funnel').innerHTML=order.filter(k=>D.status[k]).map(k=>`<div><span>${k}</span><div class="fb"><i style="width:${D.status[k]/mx*100}%;background:${k==='契約完了'?'var(--good)':k.includes('契約')?'var(--accent)':'var(--muted)'}"></i></div><span class="n">${D.status[k]}</span></div>`).join('');
+// genre chart (contracted)
+(function(){const done=D.members.filter(m=>m.st==='契約完了');const cnt={};done.forEach(m=>cnt[m.g||'未分類']=(cnt[m.g||'未分類']||0)+1);const arr=Object.entries(cnt).sort((a,b)=>b[1]-a[1]);const mx=arr[0][1];const rh=22,W=520;let s='';arr.forEach(([k,v],i)=>{const y=12+i*(rh+4);const bw=(W-200)*v/mx;s+=`<text x="118" y="${y+15}" text-anchor="end">${k}</text><rect x="126" y="${y}" width="${bw}" height="${rh}" fill="var(--accent)"/><text x="${130+bw}" y="${y+15}">${v}</text>`});$('#genre').setAttribute('viewBox',`0 0 ${W} ${12+arr.length*(rh+4)+8}`);$('#genre').innerHTML=s;})();
+// roster
+const sts=[...new Set(D.members.map(m=>m.st))],gs=[...new Set(D.members.map(m=>m.g).filter(Boolean))].sort();
+$('#fst').innerHTML+=sts.map(s=>`<option>${s}</option>`).join('');$('#fg').innerHTML+=gs.map(s=>`<option>${s}</option>`).join('');
+let sortDesc=true,shown=60;
+function render(){const q=$('#q').value.trim().toLowerCase(),st=$('#fst').value,g=$('#fg').value,fy=$('#ffy').value;
+ let rows=D.members.filter(m=>(!st||m.st===st)&&(!g||m.g===g)&&(!fy||m.fy===fy)&&(!q||(m.n+m.g+m.c+m.u).toLowerCase().includes(q)));
+ rows.sort((a,b)=>sortDesc?b.f-a.f:a.f-b.f);
+ $('#cnt').textContent=`${rows.length} 件 / 合計フォロワー ${rows.reduce((s,m)=>s+m.f,0).toLocaleString()}`;
+ $('#rbody').innerHTML=rows.slice(0,shown).map(m=>`<tr><td class="name">${m.u?`<a href="${m.u}" target="_blank" rel="noopener">${m.n||m.u}</a>`:m.n}</td><td>${m.s}</td><td>${m.g}</td><td class="num">${m.f?m.f.toLocaleString():'—'}</td><td><span class="pill ${m.st==='契約完了'?'p-good':'p-acc'}">${m.st}</span></td><td>${m.m||(m.fy==='2025'?'2025年度':'—')}</td><td>${m.c}</td><td>${m.imp?'済':''}</td></tr>`).join('');
+ $('#more').hidden=rows.length<=shown;}
+['#q','#fst','#fg','#ffy'].forEach(s=>$(s).addEventListener('input',()=>{shown=60;render()}));
+$('#more').onclick=()=>{shown+=100;render()};
+document.querySelector('th button[data-k]').onclick=()=>{sortDesc=!sortDesc;render()};
+render();
+</script>

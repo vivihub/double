@@ -25,12 +25,12 @@
 
 <div class="grid2">
   <section class="panel">
-    <h2>リスト全体のステータス（1,013件）</h2>
+    <h2>リスト全体のステータス（<span id="nrows">—</span>件）</h2>
     <div class="funnel" id="funnel"></div>
     <p class="note">声掛け済みのうち契約に至った割合がカテゴリ充足の制約。例えるなら、採用の歩留まり表です：母集団（アタック済）が多くても、面談→内定（契約）の転換率が低ければ目標には届きません。</p>
   </section>
   <section class="panel">
-    <h2>契約者のジャンル内訳（契約完了 141名）</h2>
+    <h2>契約者のジャンル内訳（契約完了 <span id="ndone">—</span>名）</h2>
     <div class="scroll"><svg id="genre" viewBox="0 0 520 220" width="100%" role="img" aria-label="契約完了者のジャンル内訳"></svg></div>
     <p class="note">シート上のジャンル（美容／日用品／食品 など）。注力カテゴリ「ママ・ライフスタイル」は日用品・食品・ライフスタイルを含む集計。</p>
   </section>
@@ -57,6 +57,7 @@
 const $=s=>document.querySelector(s);
 const D=DATA, pct=(a,t)=>t?Math.round(a/t*1000)/10:0;
 $('#upd').textContent=D.updated;
+$('#nrows').textContent=Object.values(D.status).reduce((a,b)=>a+b,0).toLocaleString();$('#ndone').textContent=(D.status['契約完了']||0).toLocaleString();
 const cls=p=>p>=70?'p-good':p>=30?'p-warn':'p-bad';
 // tiles
 const sumA=D.cats.reduce((s,c)=>s+c.a,0);

@@ -16,7 +16,7 @@
     <p class="note">目標は年間（Notion「目標・Action Plan」）、契約数はスプレッドシート「2026年度進捗管理」の値。</p>
   </section>
   <section class="panel">
-    <h2>月次 声掛け → 契約（5〜9月）</h2>
+    <h2>月次 声掛け → 契約（<span id="mrange"></span>）</h2>
     <div class="scroll"><svg id="monthly" viewBox="0 0 520 230" width="100%" role="img" aria-label="月次の声掛け目標・実数と契約数"></svg></div>
     <div class="legend"><span><i style="background:var(--track)"></i>声掛け目標</span><span><i style="background:var(--accent)"></i>声掛け実数</span><span><i style="background:var(--good)"></i>契約数（線）</span></div>
     <div class="scroll" style="margin-top:12px"><table><thead><tr><th>月</th><th class="num">契約目標</th><th class="num">契約</th><th class="num">声掛け目標</th><th class="num">声掛け実数</th><th class="num">契約率</th></tr></thead><tbody id="mbody"></tbody></table></div>
@@ -61,12 +61,12 @@ $('#nrows').textContent=Object.values(D.status).reduce((a,b)=>a+b,0).toLocaleStr
 const cls=p=>p>=70?'p-good':p>=30?'p-warn':'p-bad';
 // tiles
 const sumA=D.cats.reduce((s,c)=>s+c.a,0);
-const attackTotal=D.monthly.reduce((s,m)=>s+m.aa,0), contractTotal=D.monthly.reduce((s,m)=>s+m.c,0);
+const rep=D.monthly.filter(m=>m.c!=null), attackTotal=rep.reduce((s,m)=>s+m.aa,0), contractTotal=rep.reduce((s,m)=>s+m.c,0), mrange=`${rep[0].m}〜${rep[rep.length-1].m}`;$('#mrange').textContent=`${D.monthly[0].m}〜${D.monthly[D.monthly.length-1].m}`;
 const tiles=[
  {l:'契約目標（年間）',v:D.target,u:'名',s:'注力4カテゴリ合計 500'},
  {l:'契約人数 総計（累計）',v:D.total,u:'名',s:`達成率 ${pct(D.total,D.target)}%`,bar:pct(D.total,D.target)},
  {l:'2026年度 契約人数',v:D.fy2026,u:'名',s:`カテゴリ内訳合計 ${sumA}名`,bar:pct(D.fy2026,D.target)},
- {l:'声掛け → 契約 転換率',v:pct(contractTotal,attackTotal),u:'%',s:`声掛け ${attackTotal.toLocaleString()} / 契約 ${contractTotal}（5〜9月）`},
+ {l:'声掛け → 契約 転換率',v:pct(contractTotal,attackTotal),u:'%',s:`声掛け ${attackTotal.toLocaleString()} / 契約 ${contractTotal}（${mrange}）`},
 ];
 $('#tiles').innerHTML=tiles.map(t=>`<div class="tile"><div class="l">${t.l}</div><div class="v">${t.v.toLocaleString()}<span>${t.u}</span></div><div class="s">${t.s}</div>${t.bar!=null?`<div class="bar"><i style="width:${t.bar}%"></i></div>`:''}</div>`).join('');
 // categories
@@ -75,9 +75,9 @@ $('#catbody').innerHTML=D.cats.map(c=>{const p=pct(c.a,c.t);return `<tr><td>${c.
 (function(){const W=520,H=230,L=44,R=16,T=16,B=36,w=W-L-R,h=H-T-B;const max=400;const n=D.monthly.length,g=w/n;
 let s='';for(const v of [0,100,200,300,400]){const y=T+h-v/max*h;s+=`<line x1="${L}" x2="${W-R}" y1="${y}" y2="${y}" stroke="var(--line)"/><text x="${L-6}" y="${y+4}" text-anchor="end">${v}</text>`}
 D.monthly.forEach((m,i)=>{const x=L+i*g;const bw=g*0.26;s+=`<rect x="${x+g*0.2}" y="${T+h-m.ta/max*h}" width="${bw}" height="${m.ta/max*h}" fill="var(--track)"/><rect x="${x+g*0.2+bw+3}" y="${T+h-m.aa/max*h}" width="${bw}" height="${m.aa/max*h}" fill="var(--accent)"/><text x="${x+g/2}" y="${H-14}" text-anchor="middle">${m.m}</text>`});
-const pts=D.monthly.map((m,i)=>[L+i*g+g/2,T+h-m.c/max*h]);s+=`<polyline points="${pts.map(p=>p.join(',')).join(' ')}" fill="none" stroke="var(--good)" stroke-width="2.5"/>`;pts.forEach((p,i)=>{s+=`<circle cx="${p[0]}" cy="${p[1]}" r="4" fill="var(--good)"/><text x="${p[0]}" y="${p[1]-9}" text-anchor="middle" style="fill:var(--good);font-weight:600">${D.monthly[i].c}</text>`});
+const pts=D.monthly.map((m,i)=>m.c==null?null:[L+i*g+g/2,T+h-m.c/max*h]).filter(Boolean);s+=`<polyline points="${pts.map(p=>p.join(',')).join(' ')}" fill="none" stroke="var(--good)" stroke-width="2.5"/>`;pts.forEach((p,i)=>{s+=`<circle cx="${p[0]}" cy="${p[1]}" r="4" fill="var(--good)"/><text x="${p[0]}" y="${p[1]-9}" text-anchor="middle" style="fill:var(--good);font-weight:600">${rep[i].c}</text>`});
 $('#monthly').innerHTML=s;})();
-$('#mbody').innerHTML=D.monthly.map(m=>`<tr><td>${m.m}</td><td class="num">${m.tc}</td><td class="num">${m.c}</td><td class="num">${m.ta}</td><td class="num">${m.aa}</td><td class="num">${pct(m.c,m.aa)}%</td></tr>`).join('');
+$('#mbody').innerHTML=D.monthly.map(m=>`<tr><td>${m.m}</td><td class="num">${m.tc}</td><td class="num">${m.c==null?'—':m.c}</td><td class="num">${m.ta}</td><td class="num">${m.aa}</td><td class="num">${m.c==null?'—':pct(m.c,m.aa)+'%'}</td></tr>`).join('');
 // funnel
 const order=['アタック済','契約完了','案件実施確定後 契約締結','契約交渉中','契約書内容確認中','契約書送付済','保留','事務所所属','お断り','アタックしない'];
 const mx=Math.max(...Object.values(D.status));

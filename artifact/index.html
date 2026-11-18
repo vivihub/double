@@ -145,7 +145,7 @@ const pts=D.monthly.map((m,i)=>m.c==null?null:[L+i*g+g/2,T+h-m.c/max*h]).filter(
 $('#monthly').innerHTML=s;})();
 $('#mbody').innerHTML=D.monthly.map(m=>`<tr><td>${m.m}</td><td class="num">${m.tc}</td><td class="num">${m.c==null?'—':m.c}</td><td class="num">${m.ta}</td><td class="num">${m.aa==null?'—':m.aa}</td><td class="num">${m.c==null?'—':pct(m.c,m.aa)+'%'}</td></tr>`).join('');
 // funnel
-const order=['アタック済','契約完了','案件実施確定後 契約締結','契約交渉中','契約書内容確認中','契約書送付済','保留','事務所所属','お断り','アタックしない'];
+const order=['アタック済','返信あり','契約完了','案件実施確定後 契約締結','契約交渉中','契約書内容確認中','契約書送付済','保留','事務所所属','お断り','アタックしない'];
 const mx=Math.max(...Object.values(D.status));
 $('#funnel').innerHTML=order.filter(k=>D.status[k]).map(k=>`<div><span>${k}</span><div class="fb"><i style="width:${D.status[k]/mx*100}%;background:${k==='契約完了'?'var(--good)':k.includes('契約')?'var(--accent)':'var(--muted)'}"></i></div><span class="n">${D.status[k]}</span></div>`).join('');
 // genre chart (contracted)
